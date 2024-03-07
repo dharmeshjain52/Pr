@@ -6,15 +6,15 @@ import dotenv from 'dotenv'
 dotenv.config({
     path:'./env'
 })
-
+const port =8000 || process.env.PORT
 connectDB()
 .then(()=>{
     app.on("error",(error)=>{
         console.log("ERROR",error)
         throw error
     })
-    app.listen(process.env.PORT,()=>{
-        console.log(`SERVER RUNNING AT PORT:${process.env.PORT}`)
+    app.listen(port,()=>{
+        console.log(`SERVER RUNNING AT PORT:${port}`)
     })
 })
 .catch((err)=>{
