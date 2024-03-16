@@ -274,6 +274,74 @@ const updateCoverImage=asyncHandler(async(req,res) => {
    )
 })
 
+const getUserChannelProfile = asyncHandler(async(req,res)=>{
+   //get username
+   const {username} = req.params
+   if(!username){
+      throw new ApiError(400,"Username Missing")
+   }
+   //aggregation pipelining
+   const channel = await User.aggregate([
+      {
+         $match:{
+            username:username?.toLowerCase()
+         }
+      },
+      {
+         $lookup:{
+            from:"subscriptions",
+            localField:"_id",
+            foreignField:"channel",
+            as:"subscribers"
+         }
+      },
+      {
+         $lookup:{
+            from:"subscriptions",
+            localField:"_id",
+            foreignField:"subscription",
+            as:"subscribedto"
+         }
+      },
+      {
+         $addFields:{
+            subscribersCount:{
+               $size:"$subscribers"
+            },
+            subscribedToCount:{
+               $size:"$subscribedto"
+            },
+            isSubscribed:{
+              $cond: {
+               if:{$in:[req.user?._id,"$subscribers.subscriber"]},
+               then:true,
+               else:false
+            }
+          }
+         }
+      },
+      {
+         $project:{
+            fullName:1,
+            username:1,
+            subscribersCount:1,
+            subscribedToCount:1,
+            email:1,
+            avatar:1,
+            coverImage:1
+         }
+      }
+   ])
+   if(!channel?.length){
+      throw new ApiError(400,"Channel does not exist")
+   }
+
+   return res
+   .status(200)
+   .json(
+      new ApiResponse(200,channel[0],"user details fetched successfully")
+   )
+})
 export {
    userRegister,
    userLogin,
@@ -283,4 +351,6 @@ export {
    getCurrentUser,
    updateInfo,
    updateAvatar,
-   updateCoverImage}
+   updateCoverImage,
+   getUserChannelProfile,
+}
