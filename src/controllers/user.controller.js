@@ -4,6 +4,7 @@ import { User } from '../models/user.models.js'
 import {uploadOnCloudinary} from '../utils/cloudinaryfileupload.js'
 import { ApiResponse } from '../utils/Apiresponse.js'
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose'
 //generate access and refresh tokens
 const generateRefreshAndAccessTokens=async(userId)=>{
    try {
@@ -342,6 +343,55 @@ const getUserChannelProfile = asyncHandler(async(req,res)=>{
       new ApiResponse(200,channel[0],"user details fetched successfully")
    )
 })
+
+const getUserWatchHistory = asyncHandler(async(req,res)=>{
+   const getWatchHistory = await User.aggregate([
+      {
+         $match:{
+            _id: new  mongoose.Types.ObjectId(req.user._id)
+         }
+      },
+      {
+         $lookup:{
+            from:"videos",
+            localField:"watchHistory",
+            foreignField:"_id",
+            as:"watchHistory",
+            pipeline:[
+               {
+                  $lookup:{
+                     from:"users",
+                     localField:"owner",
+                     foreignField:"_id",
+                     as:"owner",
+                     pipeline:[
+                        {
+                           $project:{
+                              fullName:1,
+                              username:1,
+                              avatar:1
+                           }
+                        }
+                     ]
+                  },
+               }
+            ]
+         }
+      },
+      {
+         $addFields:{
+            owner:{
+               $first:"$owner"
+               }  
+         }
+      }
+   ])
+   return res
+   .status(200)
+   .json(
+      new ApiResponse(200,getWatchHistory[0].watchHistory,"watch history fetched")
+   )
+})
 export {
    userRegister,
    userLogin,
@@ -353,4 +403,5 @@ export {
    updateAvatar,
    updateCoverImage,
    getUserChannelProfile,
+   getUserWatchHistory
 }
