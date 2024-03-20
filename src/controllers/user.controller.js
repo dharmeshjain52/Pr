@@ -42,7 +42,7 @@ const userRegister = asyncHandler(async(req,res)=>{
    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length >0) {
        coverImageLocalPath=req.files.coverImage[0].path
    }
-   
+
    if(!avatarLocalPath){
       throw new ApiError(400,"Avatar Required")
    }
@@ -63,7 +63,7 @@ const userRegister = asyncHandler(async(req,res)=>{
       avatar:avatarUpload.url,
       coverImage:coverImageUpload?.url || ""
    })
-   const userCreated = User.findById(user._id).select("-password -refreshToken")
+   const userCreated = await User.findById(user._id).select("-password -refreshToken")
    if(!userCreated){
       throw new ApiError(500,"Something went wrong while registering the user")
    }
@@ -76,7 +76,6 @@ const userRegister = asyncHandler(async(req,res)=>{
 
 const userLogin=asyncHandler(async(req,res)=>{
    const{username,email,password}=req.body
-   console.log(username,email)
    if(!username && !email) {
       throw new ApiError(400,"Username or Email is required")
    }
@@ -96,7 +95,7 @@ const userLogin=asyncHandler(async(req,res)=>{
    }
    const{refreshToken,accessToken}=await generateRefreshAndAccessTokens(enteredUser._id)
 
-   const loggedInUser=User.findById(enteredUser._id).select("-password -refreshToken")
+   const loggedInUser = await User.findById(enteredUser._id).select("-password -refreshToken")
 
    const options={
       httpOnly:true,
@@ -117,8 +116,8 @@ const userLogOut = asyncHandler(async(req,res)=>{
    await User.findByIdAndUpdate(
       req.user._id,
       {
-         $set:{
-            refreshToken:undefined
+         $unset:{
+            refreshToken:1
          }
       },
       {
@@ -132,8 +131,8 @@ const userLogOut = asyncHandler(async(req,res)=>{
    }
    return res
    .status(200)
-   .clearCookie("refreshToken",options)
    .clearCookie("accessToken",options) 
+   .clearCookie("refreshToken",options)
    .json(
       new ApiResponse(200,{},"User logged Out")
    )
@@ -176,7 +175,7 @@ const refreshAccessToken=asyncHandler(async(req,res)=>{
 const changePassword = asyncHandler(async(req,res)=>{
    const {oldPassword,newPassword} = req.body 
    //find user
-   const user=User.findById(req.user?._id)
+   const user=await User.findById(req.user?._id)
    if(!user){
       throw new ApiError(400,"Invalid user")
    }
@@ -209,7 +208,7 @@ const updateInfo = asyncHandler(async(req,res)=>{
       throw new ApiError(400,"Enter Details")
    }
    //find and update
-   const user=User.findByIdAndUpdate(req.user?._id,{
+   const user = await User.findByIdAndUpdate(req.user?._id,{
       $set:{
          fullName,
          email
@@ -224,7 +223,7 @@ const updateInfo = asyncHandler(async(req,res)=>{
 })
 
 const updateAvatar=asyncHandler(async(req,res) => {
-   const avatarLocalPath=req.user?.path
+   const avatarLocalPath=req.file?.path
    //validate
    if(!avatarLocalPath){
       throw new ApiError(400,"Avatar file is missing")
@@ -250,7 +249,7 @@ const updateAvatar=asyncHandler(async(req,res) => {
 })
 
 const updateCoverImage=asyncHandler(async(req,res) => {
-   const coverImageLocalPath=req.user?.path
+   const coverImageLocalPath=req.file?.path
    //validate
    if(!coverImageLocalPath){
       throw new ApiError(400,"cover image file is missing")
