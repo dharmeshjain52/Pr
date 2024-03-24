@@ -22,4 +22,22 @@ const uploadOnCloudinary=async (localpath)=>
     }
 }
 
-export {uploadOnCloudinary}
+const deleteOnCloudinary = async(public_id) =>
+{
+  try {
+    await cloudinary.uploader.destroy(public_id)
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const deleteVideoOnCloudinary = async (public_id) =>
+{
+  try {
+    await cloudinary.uploader.destroy(public_id,{resource_type:'video'})
+  } catch (error) {
+    
+  }
+}
+
+export {uploadOnCloudinary,deleteOnCloudinary,deleteVideoOnCloudinary}
