@@ -139,7 +139,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         [
             {
                 $match:{
-                    likedBy
+                    likedBy:user._id
                 }
             },
             {
