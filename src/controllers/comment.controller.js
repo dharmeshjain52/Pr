@@ -7,7 +7,38 @@ import {asyncHandler} from "../utils/asyncHandler.js"
 const getVideoComments = asyncHandler(async (req, res) => {
     //TODO: get all comments for a video
     const {videoId} = req.params
-    const {page = 1, limit = 10} = req.query
+    const {page = 1, limit = 10,sortBy} = req.query
+
+    if(!videoId){
+        throw new ApiError(400,"Video id required")
+    }
+
+    const sort={}
+    sort[sortBy] = -1
+    const parseLimit = parseInt(limit)
+    const pageSkip = (page-1)*parseLimit
+
+    const comments = await Comment.aggregate([
+        {
+            $match:{
+                video:new mongoose.mongo.ObjectId(videoId)
+            }
+        },
+        {
+            $sort:sort
+        },
+        {
+            $skip:pageSkip
+        },
+        {
+            $limit:parseLimit
+        },
+        {
+            $project:{
+                _id:1
+            }
+        }
+    ])
 
 })
 
